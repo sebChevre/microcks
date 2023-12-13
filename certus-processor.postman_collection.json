@@ -1,0 +1,380 @@
+{
+	"info": {
+		"_postman_id": "e177a260-76dd-4a7d-b7ac-97998be58f5c",
+		"name": "certus-processor",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "2264347"
+	},
+	"item": [
+		{
+			"name": "[Create Batch] - /api/v1/batches",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {\r",
+							"    pm.expect(pm.response.code).to.be.oneOf([201, 202]);\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Presence of a batchId in body\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property(\"batchId\")\r",
+							"});\r",
+							"\r",
+							"let jsonData = pm.response.json();\r",
+							"pm.variables.set(\"batchId\", jsonData.batchId);\r",
+							"\r",
+							"console.info(\"BatchId received: \" + pm.variables.get(\"batchId\"))\r",
+							"console.info(\"Workflow next step: [Get Batch] - /api/v1/batches/:batchId\")\r",
+							"postman.setNextRequest(\"[Get Batch] - /api/v1/batches/:batchId\")\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "issuer-impersonate",
+						"value": "{{issuerImpersonate}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "csv",
+							"description": "Fichier csv des données à sécuriser",
+							"type": "file",
+							"src": "/D:/CERTUS/test.csv"
+						},
+						{
+							"key": "name",
+							"value": "ExtraitPousuite_2021001000005",
+							"description": "Nom du batch",
+							"type": "text"
+						},
+						{
+							"key": "description",
+							"value": "Extrait de poursuite",
+							"type": "text"
+						},
+						{
+							"key": "documentTypeId",
+							"value": "{{documentTypeId}}",
+							"type": "text"
+						},
+						{
+							"key": "csv",
+							"value": "s",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "https://{{hostname}}/api/v1/batches",
+					"protocol": "https",
+					"host": [
+						"{{hostname}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"batches"
+					]
+				},
+				"description": "Requête initial de soumission de batch"
+			},
+			"response": []
+		},
+		{
+			"name": "[Get Batch] - /api/v1/batches/:batchId",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"\r",
+							"console.info(\"BatchId to get: \" + pm.variables.get(\"batchId\"))\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful GET request\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Presence of a Id in body\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property(\"id\")\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Presence of a Id that match batchId\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    var id = jsonData.id;\r",
+							"    pm.expect(id).eq(pm.variables.get(\"batchId\"));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Batch in state GENERATION_IN_PROGRESS or GENERATED\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    var status = jsonData.status;\r",
+							"    pm.expect(status).to.be.oneOf([\"GENERATION_IN_PROGRESS\",\"GENERATED\"]);\r",
+							"});\r",
+							"\r",
+							"postman.setNextRequest(\"[Get QR Code] - /api/v1/batches/:batchId/download\")"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "issuer-impersonate",
+						"value": "{{issuerImpersonate}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://{{hostname}}/api/v1/batches/:batchId",
+					"protocol": "https",
+					"host": [
+						"{{hostname}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"batches",
+						":batchId"
+					],
+					"variable": [
+						{
+							"key": "batchId",
+							"value": "{{batchId}}",
+							"description": "Id du batch à récupérer"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "[Get QR Code] - /api/v1/batches/:batchId/download",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"\r",
+							"setTimeout(function () {\r",
+							"   \r",
+							"    console.info(\"BatchId to download: \" + pm.variables.get(\"batchId\"))\r",
+							"},3000)"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful GET request\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"postman.setNextRequest(\"[Batch activation] - /api/v1/batches/:batchId/activation\")"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "issuer-impersonate",
+						"value": "{{issuerImpersonate}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://{{hostname}}/api/v1/batches/:batchId/download",
+					"protocol": "https",
+					"host": [
+						"{{hostname}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"batches",
+						":batchId",
+						"download"
+					],
+					"variable": [
+						{
+							"key": "batchId",
+							"value": "{{batchId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "[Batch activation] - /api/v1/batches/:batchId/activation",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"setTimeout(function () {\r",
+							"   \r",
+							"    console.info(\"BatchId to activate: \" + pm.variables.get(\"batchId\"))\r",
+							"},3000)\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful PUT request\", function () {\r",
+							"    pm.response.to.have.status(204);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "issuer-impersonate",
+						"value": "{{issuerImpersonate}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://{{hostname}}/api/v1/batches/:batchId/activation",
+					"protocol": "https",
+					"host": [
+						"{{hostname}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"batches",
+						":batchId",
+						"activation"
+					],
+					"variable": [
+						{
+							"key": "batchId",
+							"value": "{{batchId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Swagger Certus",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{hostname}}/api/v1/swagger-ui/index.html?configUrl=/api/v1/api-docs/swagger-config",
+					"protocol": "https",
+					"host": [
+						"{{hostname}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"swagger-ui",
+						"index.html"
+					],
+					"query": [
+						{
+							"key": "configUrl",
+							"value": "/api/v1/api-docs/swagger-config"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"//pm.request.headers.add({key: 'issuer-impersonate', value: 'rcjutest' });",
+					"//pm.request.headers.add({key: 'issuer-impersonate',value: 'rcjuofficedespoursuitesetfaillites'});"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "batchId",
+			"value": "rcjutestW3GW3X",
+			"disabled": true
+		},
+		{
+			"key": "batchId",
+			"value": ""
+		}
+	]
+}
